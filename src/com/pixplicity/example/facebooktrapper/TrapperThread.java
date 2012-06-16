@@ -102,7 +102,6 @@ public class TrapperThread extends Thread {
 		Notification notification = new Notification(
 				R.drawable.ic_launcher, title,
 				System.currentTimeMillis());
-		notification.flags = Notification.FLAG_AUTO_CANCEL;
 		boolean cancel = false;
 		if (id < 0) {
 			id = 0;
