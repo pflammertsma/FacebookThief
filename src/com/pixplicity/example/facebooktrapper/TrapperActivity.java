@@ -16,11 +16,7 @@ public class TrapperActivity extends Activity {
 
 	protected static final int MAX_ITEMS = 200;
 
-	protected static final boolean USE_SERVICE = true;
-
 	protected static final String TAG = "FacebookTrapper";
-
-	private static Thread mThread;
 
 	private ToggleButton mBtn;
 	private ListView mList;
@@ -37,72 +33,42 @@ public class TrapperActivity extends Activity {
 		mBtn.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				if (USE_SERVICE) {
-					Intent serviceIntent = new Intent(TrapperActivity.this,
-							TrapperService.class);
-					if (mBtn.isChecked()) {
-						final ProgressDialog pd = new ProgressDialog(
-								TrapperActivity.this);
-						pd.setMessage("Starting service...");
-						pd.show();
-						pd.setCancelable(false);
-						new Thread() {
-							@Override
-							public void run() {
-								do {
-									mService = TrapperService
-											.getInstance(TrapperActivity.this);
-									if (mService != null) {
-										break;
-									}
-									try {
-										Thread.sleep(500);
-									} catch (InterruptedException e) {
-									}
-								} while (true);
-								TrapperActivity.this
-										.runOnUiThread(new Runnable() {
-											@Override
-											public void run() {
-												pd.dismiss();
-											}
-										});
-							}
-						}.start();
-						startService(serviceIntent);
-					} else {
-						if (mService != null) {
-							mService.stop();
+				Intent serviceIntent = new Intent(TrapperActivity.this,
+						TrapperService.class);
+				if (mBtn.isChecked()) {
+					final ProgressDialog pd = new ProgressDialog(
+							TrapperActivity.this);
+					pd.setMessage("Starting service...");
+					pd.show();
+					pd.setCancelable(false);
+					new Thread() {
+						@Override
+						public void run() {
+							do {
+								mService = TrapperService
+										.getInstance(TrapperActivity.this);
+								if (mService != null) {
+									break;
+								}
+								try {
+									Thread.sleep(500);
+								} catch (InterruptedException e) {
+								}
+							} while (true);
+							TrapperActivity.this.runOnUiThread(new Runnable() {
+								@Override
+								public void run() {
+									pd.dismiss();
+								}
+							});
 						}
-						stopService(serviceIntent);
-					}
+					}.start();
+					startService(serviceIntent);
 				} else {
-					if (mBtn.isChecked()) {
-						if (mThread != null) {
-							mThread.interrupt();
-						}
-						mThread = new TrapperThread(TrapperActivity.this) {
-							@Override
-							public void run() {
-								showNotification(
-										0, "Facebook Trapper running",
-										null);
-								doInBackground(mList, mListAdapter);
-								showNotification(
-										-1, "Facebook Trapper stopped",
-										null);
-								mBtn.post(new Runnable() {
-									@Override
-									public void run() {
-										mBtn.setChecked(false);
-									}
-								});
-							};
-						};
-						mThread.start();
-					} else if (mThread != null) {
-						mThread.interrupt();
+					if (mService != null) {
+						mService.stop();
 					}
+					stopService(serviceIntent);
 				}
 			}
 		});
@@ -125,27 +91,19 @@ public class TrapperActivity extends Activity {
 	@Override
 	protected void onResume() {
 		super.onResume();
-		if (USE_SERVICE) {
-			mService = TrapperService
-					.getInstance(TrapperActivity.this);
-			if (mService != null && mService.isAlive()) {
-				mBtn.setChecked(true);
-			} else {
-				mBtn.setChecked(false);
-			}
+		mService = TrapperService
+				.getInstance(TrapperActivity.this);
+		if (mService != null && mService.isAlive()) {
+			mBtn.setChecked(true);
 		} else {
-			if (mThread != null && mThread.isAlive()) {
-				mBtn.setChecked(true);
-			} else {
-				mBtn.setChecked(false);
-			}
+			mBtn.setChecked(false);
 		}
 	}
 
 	@Override
 	protected void onPause() {
 		super.onPause();
-		if (USE_SERVICE && mService != null) {
+		if (mService != null) {
 			mService.setActivity(null);
 		}
 	}
@@ -153,9 +111,6 @@ public class TrapperActivity extends Activity {
 	@Override
 	protected void onRestart() {
 		super.onRestart();
-		if (mThread != null && mThread.isAlive()) {
-			mBtn.setChecked(true);
-		}
 	}
 
 	protected ListView getList() {
