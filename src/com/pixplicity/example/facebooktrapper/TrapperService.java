@@ -13,6 +13,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.IBinder;
 import android.util.Log;
 import android.widget.ArrayAdapter;
@@ -176,8 +177,12 @@ public class TrapperService extends Service {
 		if (id == 0) {
 			intent = new Intent(this, TrapperActivity.class);
 			notification.flags |= Notification.FLAG_ONGOING_EVENT;
+			notification.icon = R.drawable.ic_service;
 		} else {
 			intent = result.getIntent();
+			notification.sound = Uri.parse("android.resource://"
+					+ getPackageName() + "/" + R.raw.alarm);
+			notification.icon = R.drawable.ic_security;
 		}
 		PendingIntent contentIntent = PendingIntent
 				.getActivity(this, 0, intent, 0);
