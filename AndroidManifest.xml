@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.pixplicity.example.facebooktrapper"
+    package="com.pixplicity.example.facebookthief"
     android:versionCode="1"
     android:versionName="1.0" >
 
@@ -23,7 +23,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <service android:enabled="true" android:name=".TrapperService" />
+
+        <service
+            android:name=".Tcom.pixplicity.example.facebookthief.TrapperService"
+            android:enabled="true" />
     </application>
 
 </manifest>
