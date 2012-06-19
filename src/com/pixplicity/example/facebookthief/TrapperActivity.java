@@ -6,7 +6,6 @@ import android.content.DialogInterface;
 import android.content.DialogInterface.OnDismissListener;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.AdapterView;
@@ -53,7 +52,7 @@ public class TrapperActivity extends Activity {
 									if (mService != null) {
 										break;
 									}
-									Thread.sleep(1000);
+									Thread.sleep(500);
 								} while (true);
 							} catch (InterruptedException e) {
 							}
@@ -73,7 +72,6 @@ public class TrapperActivity extends Activity {
 							serviceThread.interrupt();
 						}
 					});
-					Log.v(TAG, "started service from " + serviceIntent);
 					startService(serviceIntent);
 				} else {
 					if (mService != null) {

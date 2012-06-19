@@ -31,9 +31,7 @@ public class TrapperService extends Service {
 	public static TrapperService getInstance(TrapperActivity activity) {
 		if (mInstance != null) {
 			mInstance.setActivity(activity);
-			Log.v(TrapperActivity.TAG, "service instance: " + mInstance);
 		}
-		Log.v(TrapperActivity.TAG, "no service instance");
 		return mInstance;
 	}
 
@@ -130,7 +128,6 @@ public class TrapperService extends Service {
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
-		Log.i(TrapperActivity.TAG, "service start command");
 		return super.onStartCommand(intent, flags, startId);
 	}
 
