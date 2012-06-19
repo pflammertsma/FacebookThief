@@ -3,9 +3,10 @@ package com.pixplicity.example.facebookthief;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
-import android.content.DialogInterface.OnDismissListener;
+import android.content.DialogInterface.OnCancelListener;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.AdapterView;
@@ -49,13 +50,15 @@ public class TrapperActivity extends Activity {
 								do {
 									mService = TrapperService
 											.getInstance(TrapperActivity.this);
-									if (mService != null) {
+									if (mService != null && mService.isAlive()) {
 										break;
 									}
 									Thread.sleep(500);
 								} while (true);
 							} catch (InterruptedException e) {
+								Log.v(TAG, "cancelled service connection");
 							}
+							Log.v(TAG, "service connection: " + mService);
 							TrapperActivity.this.runOnUiThread(new Runnable() {
 								@Override
 								public void run() {
@@ -66,9 +69,9 @@ public class TrapperActivity extends Activity {
 						}
 					};
 					serviceThread.start();
-					pd.setOnDismissListener(new OnDismissListener() {
+					pd.setOnCancelListener(new OnCancelListener() {
 						@Override
-						public void onDismiss(DialogInterface dialog) {
+						public void onCancel(DialogInterface dialog) {
 							serviceThread.interrupt();
 						}
 					});

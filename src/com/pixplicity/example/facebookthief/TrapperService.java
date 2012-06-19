@@ -46,7 +46,7 @@ public class TrapperService extends Service {
 		// The service is first created
 		int id = 0;
 		startForeground(id, showNotification(id, "Facebook Trapper running"));
-		if (mThread == null) {
+		if (mThread == null || !mThread.isAlive()) {
 			mThread = new Thread() {
 				int count = 0;
 				Pattern pattern =
