@@ -2,8 +2,11 @@ package com.pixplicity.example.facebookthief;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnDismissListener;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.AdapterView;
@@ -40,29 +43,37 @@ public class TrapperActivity extends Activity {
 							TrapperActivity.this);
 					pd.setMessage("Starting service...");
 					pd.show();
-					pd.setCancelable(false);
-					new Thread() {
+					final Thread serviceThread = new Thread() {
 						@Override
 						public void run() {
-							do {
-								mService = TrapperService
-										.getInstance(TrapperActivity.this);
-								if (mService != null) {
-									break;
-								}
-								try {
-									Thread.sleep(500);
-								} catch (InterruptedException e) {
-								}
-							} while (true);
+							try {
+								do {
+									mService = TrapperService
+											.getInstance(TrapperActivity.this);
+									if (mService != null) {
+										break;
+									}
+									Thread.sleep(1000);
+								} while (true);
+							} catch (InterruptedException e) {
+							}
 							TrapperActivity.this.runOnUiThread(new Runnable() {
 								@Override
 								public void run() {
 									pd.dismiss();
+									updateState();
 								}
 							});
 						}
-					}.start();
+					};
+					serviceThread.start();
+					pd.setOnDismissListener(new OnDismissListener() {
+						@Override
+						public void onDismiss(DialogInterface dialog) {
+							serviceThread.interrupt();
+						}
+					});
+					Log.v(TAG, "started service from " + serviceIntent);
 					startService(serviceIntent);
 				} else {
 					if (mService != null) {
@@ -93,11 +104,7 @@ public class TrapperActivity extends Activity {
 		super.onResume();
 		mService = TrapperService
 				.getInstance(TrapperActivity.this);
-		if (mService != null && mService.isAlive()) {
-			mBtn.setChecked(true);
-		} else {
-			mBtn.setChecked(false);
-		}
+		updateState();
 	}
 
 	@Override
@@ -115,6 +122,14 @@ public class TrapperActivity extends Activity {
 
 	protected ListView getList() {
 		return mList;
+	}
+
+	private void updateState() {
+		if (mService != null && mService.isAlive()) {
+			mBtn.setChecked(true);
+		} else {
+			mBtn.setChecked(false);
+		}
 	}
 
 }

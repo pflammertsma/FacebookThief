@@ -25,7 +25,7 @@
         </activity>
 
         <service
-            android:name=".Tcom.pixplicity.example.facebookthief.TrapperService"
+            android:name=".TrapperService"
             android:enabled="true" />
     </application>
 
