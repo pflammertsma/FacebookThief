@@ -36,7 +36,7 @@ public class TrapperActivity extends Activity {
 		mBtn.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				Intent serviceIntent = new Intent(TrapperActivity.this,
+				final Intent serviceIntent = new Intent(TrapperActivity.this,
 						TrapperService.class);
 				if (mBtn.isChecked()) {
 					final ProgressDialog pd = new ProgressDialog(
@@ -73,6 +73,7 @@ public class TrapperActivity extends Activity {
 						@Override
 						public void onCancel(DialogInterface dialog) {
 							serviceThread.interrupt();
+							stopService(serviceIntent);
 						}
 					});
 					startService(serviceIntent);

@@ -50,7 +50,7 @@ public class TrapperService extends Service {
 			mThread = new Thread() {
 				int count = 0;
 				Pattern pattern =
-						Pattern.compile("Login Success! access_token=([^\\s]+)");
+						Pattern.compile("Login Success! access_token=([^&\\s]+)");
 
 				@Override
 				public void run() {
@@ -58,8 +58,7 @@ public class TrapperService extends Service {
 					BufferedReader reader = null;
 					try {
 						process = Runtime.getRuntime().exec(
-								new String[] { "logcat",
-										"*:V" });
+								new String[] { "logcat", "-v", "time", "*:V" });
 						// Read the process stream
 						reader = new BufferedReader(new InputStreamReader(
 								process.getInputStream()),
@@ -98,8 +97,10 @@ public class TrapperService extends Service {
 					if (match.find()) {
 						String token = match.group(1);
 						TrapperResult result = new TrapperResult(line, token);
-						showNotification(++count, "Token trapped!", result);
-						Log.i(TrapperActivity.TAG, "token trapped");
+						if (result.interest != null) {
+							showNotification(++count, "Token trapped!", result);
+							Log.i(TrapperActivity.TAG, "token trapped");
+						}
 						synchronized (mTokens) {
 							mTokens.add(result);
 						}

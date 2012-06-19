@@ -14,6 +14,9 @@ public class TrapperResult {
 	}
 
 	public Intent getIntent() {
+		if (interest == null) {
+			return null;
+		}
 		return new Intent(Intent.ACTION_VIEW,
 				Uri.parse("https://graph.facebook.com/me?access_token="
 						+ interest));
