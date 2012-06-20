@@ -10,9 +10,9 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-public class TrapperListAdapter extends ArrayAdapter<TrapperResult> {
+public class LogListAdapter extends ArrayAdapter<TrapperResult> {
 
-	public TrapperListAdapter(Context context) {
+	public LogListAdapter(Context context) {
 		super(context, R.layout.list_item);
 	}
 
