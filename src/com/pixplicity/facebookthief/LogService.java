@@ -1,4 +1,4 @@
-package com.pixplicity.example.facebookthief;
+package com.pixplicity.facebookthief;
 
 import java.io.BufferedReader;
 import java.io.IOException;

@@ -1,4 +1,4 @@
-package com.pixplicity.example.facebookthief;
+package com.pixplicity.facebookthief;
 
 import android.content.Context;
 import android.graphics.Typeface;

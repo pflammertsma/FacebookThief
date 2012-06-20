@@ -1,4 +1,4 @@
-package com.pixplicity.example.facebookthief;
+package com.pixplicity.facebookthief;
 
 import android.app.Activity;
 import android.app.ProgressDialog;

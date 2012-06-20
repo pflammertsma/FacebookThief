@@ -1,4 +1,4 @@
-package com.pixplicity.example.facebookthief;
+package com.pixplicity.facebookthief;
 
 /**
  * Represents log verbosity. In decreasing order (i.e. increasing specificity):
