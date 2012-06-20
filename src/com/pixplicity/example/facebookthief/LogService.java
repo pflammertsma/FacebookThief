@@ -62,7 +62,7 @@ public class LogService extends Service {
 			mThread = new Thread() {
 				int count = 0;
 				Pattern pattern = Pattern.compile(LogResult.getRegEx());
-				String verbosity = LogResult.getVerbosity();
+				String verbosity = LogResult.getVerbosity().toString();
 
 				@Override
 				public void run() {

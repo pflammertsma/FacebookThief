@@ -18,22 +18,6 @@ public class LogResult implements Serializable {
 	}
 
 	/**
-	 * Returns the desired minimum log verbosity. In decreasing verbosity:
-	 * <ul>
-	 * <li>{@code V} (verbose)</li>
-	 * <li>{@code D} (debug)</li>
-	 * <li>{@code I} (info)</li>
-	 * <li>{@code W} (warning)</li>
-	 * <li>{@code E} (error)</li>
-	 * </ul>
-	 * 
-	 * @return
-	 */
-	public static String getVerbosity() {
-		return "V";
-	}
-
-	/**
 	 * Returns regular expression for finding log matches
 	 * 
 	 * @return regular expression
@@ -55,6 +39,15 @@ public class LogResult implements Serializable {
 		return new Intent(Intent.ACTION_VIEW,
 				Uri.parse("https://graph.facebook.com/me?access_token="
 						+ interest));
+	}
+
+	/**
+	 * Returns the desired minimum {@link LogVerbosity}.
+	 * 
+	 * @return log verbosity
+	 */
+	public static LogVerbosity getVerbosity() {
+		return LogVerbosity.V;
 	}
 
 }
