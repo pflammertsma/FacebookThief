@@ -5,16 +5,32 @@ import java.io.Serializable;
 import android.content.Intent;
 import android.net.Uri;
 
-public class TrapperResult implements Serializable {
+public class LogResult implements Serializable {
 
 	private static final long serialVersionUID = 2810266560538018564L;
 
 	public final String line;
 	public final String interest;
 
-	public TrapperResult(String line, String interest) {
+	public LogResult(String line, String interest) {
 		this.line = line;
 		this.interest = interest;
+	}
+
+	/**
+	 * Returns the desired minimum log verbosity. In decreasing verbosity:
+	 * <ul>
+	 * <li>{@code V} (verbose)</li>
+	 * <li>{@code D} (debug)</li>
+	 * <li>{@code I} (info)</li>
+	 * <li>{@code W} (warning)</li>
+	 * <li>{@code E} (error)</li>
+	 * </ul>
+	 * 
+	 * @return
+	 */
+	public static String getVerbosity() {
+		return "V";
 	}
 
 	/**

@@ -27,7 +27,7 @@ public class LogActivity extends Activity {
 	private ToggleButton mBtn;
 	private ListView mList;
 
-	private ArrayAdapter<TrapperResult> mListAdapter;
+	private ArrayAdapter<LogResult> mListAdapter;
 
 	private ProgressDialog mProgress;
 	private ResponseReceiver mReceiver;
@@ -58,7 +58,7 @@ public class LogActivity extends Activity {
 				}
 			} else if (intent.getAction().equals(
 					LogService.TRAPPER_RESPONSE)) {
-				final TrapperResult response = (TrapperResult) intent
+				final LogResult response = (LogResult) intent
 						.getSerializableExtra("result");
 				synchronized (mListAdapter) {
 					// Add the item
@@ -120,7 +120,7 @@ public class LogActivity extends Activity {
 			@Override
 			public void onItemClick(AdapterView<?> parent, View view,
 					int position, long id) {
-				TrapperResult result = mListAdapter.getItem(position);
+				LogResult result = mListAdapter.getItem(position);
 				Intent intent = result.getIntent();
 				if (intent != null) {
 					startActivity(intent);

