@@ -18,6 +18,9 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.ToggleButton;
 
+/**
+ * Activity to control service and collect results.
+ */
 public class LogActivity extends Activity {
 
 	protected static final int MAX_ITEMS = 5;
@@ -34,6 +37,9 @@ public class LogActivity extends Activity {
 
 	private boolean mServiceAlive;
 
+	/**
+	 * Listen to broadcast messages from the service.
+	 */
 	private class ResponseReceiver extends BroadcastReceiver {
 		@Override
 		public void onReceive(Context context, Intent intent) {
@@ -162,10 +168,6 @@ public class LogActivity extends Activity {
 	@Override
 	protected void onRestart() {
 		super.onRestart();
-	}
-
-	protected ListView getList() {
-		return mList;
 	}
 
 }

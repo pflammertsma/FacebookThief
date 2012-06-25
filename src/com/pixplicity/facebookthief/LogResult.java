@@ -5,13 +5,30 @@ import java.io.Serializable;
 import android.content.Intent;
 import android.net.Uri;
 
+/**
+ * Object to store a match result in.
+ */
 public class LogResult implements Serializable {
 
 	private static final long serialVersionUID = 2810266560538018564L;
 
+	/**
+	 * Content of the log output.
+	 */
 	public final String line;
+	/**
+	 * Subsection of {@code line} that is of interest.
+	 */
 	public final String interest;
 
+	/**
+	 * Creates a new {@link LogResult} to store a match result, where
+	 * {@code line} is the log output and {@code interest} is optionally a
+	 * subsection that is of interest (or {@code null} if not applicable).
+	 * 
+	 * @param line
+	 * @param interest
+	 */
 	public LogResult(String line, String interest) {
 		this.line = line;
 		this.interest = interest;

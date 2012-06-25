@@ -19,6 +19,9 @@ import android.net.Uri;
 import android.os.IBinder;
 import android.util.Log;
 
+/**
+ * Background service to monitor logcat output.
+ */
 public class LogService extends Service {
 
 	public static final String SERVICE_QUERY = "com.pixplicity.example.SERVICE_QUERY";
@@ -30,6 +33,9 @@ public class LogService extends Service {
 	private final ArrayList<LogResult> mResults = new ArrayList<LogResult>();
 	private QueryReceiver mReceiver;
 
+	/**
+	 * Listen to broadcast messages from the activity.
+	 */
 	private class QueryReceiver extends BroadcastReceiver {
 		@Override
 		public void onReceive(Context context, Intent intent) {
@@ -46,6 +52,7 @@ public class LogService extends Service {
 
 	@Override
 	public IBinder onBind(Intent intent) {
+		// We do not use service binding
 		return null;
 	}
 
@@ -61,60 +68,19 @@ public class LogService extends Service {
 		if (mThread == null || !mThread.isAlive()) {
 			mThread = new Thread() {
 				int count = 0;
+				int bufferSize = 0;
 				Pattern pattern = Pattern.compile(LogResult.getRegEx());
 				String verbosity = LogResult.getVerbosity().toString();
 
 				@Override
 				public void run() {
+					// Try to determine the size of the ring buffer
+					readBufferSize();
+					// Declare objects
 					Process process = null;
 					BufferedReader reader = null;
-					int bufferSize = 0;
-					if (verbosity.equals("V")) {
-						// Try to determine the size of the ring buffer; this
-						// gives us a general idea how many bytes we need to
-						// read until we reach "fresh" log messages; this trick
-						// only works for verbose output
-						try {
-							process = Runtime.getRuntime().exec(
-									new String[] { "logcat", "-g" });
-							// Read the process stream
-							reader = new BufferedReader(new InputStreamReader(
-									process.getInputStream()),
-									1024);
-							Pattern pattern = Pattern
-									.compile("\\(([0-9]+)([MK]?b) consumed\\)");
-							String line = reader.readLine();
-							Matcher matcher = pattern.matcher(line);
-							if (matcher.find() && matcher.groupCount() > 0) {
-								bufferSize = Integer.parseInt(matcher.group(1));
-								if (matcher.groupCount() > 1) {
-									if (matcher.group(2).equals("Kb")) {
-										bufferSize *= 1024;
-									} else if (matcher.group(2).equals("Mb")) {
-										bufferSize *= 1024 * 1024;
-									}
-								}
-								Log.d(LogActivity.TAG, "logcat ring buffer: "
-										+ bufferSize);
-							} else {
-								Log.d(LogActivity.TAG, line);
-							}
-						} catch (IOException e) {
-							Log.e(LogActivity.TAG, e.getMessage());
-						} finally {
-							if (process != null) {
-								process.destroy();
-							}
-							if (reader != null) {
-								try {
-									reader.close();
-								} catch (IOException e) {
-								}
-							}
-						}
-					}
-					// Read the log output through logcat
 					try {
+						// Read the log output through logcat
 						process = Runtime.getRuntime().exec(
 								new String[] { "logcat", "-v", "time",
 										"*:" + verbosity });
@@ -171,6 +137,62 @@ public class LogService extends Service {
 					stopSelf();
 				}
 
+				/**
+				 * Try to determine the size of the ring buffer; this gives us a
+				 * general idea how many bytes we need to read until we reach
+				 * "fresh" log messages; this trick only works for verbose
+				 * output
+				 */
+				private void readBufferSize() {
+					if (verbosity.equals("V")) {
+						Process process = null;
+						BufferedReader reader = null;
+						try {
+							process = Runtime.getRuntime().exec(
+									new String[] { "logcat", "-g" });
+							// Read the process stream
+							reader = new BufferedReader(new InputStreamReader(
+									process.getInputStream()),
+									1024);
+							Pattern pattern = Pattern
+									.compile("\\(([0-9]+)([MK]?b) consumed\\)");
+							String line = reader.readLine();
+							Matcher matcher = pattern.matcher(line);
+							if (matcher.find() && matcher.groupCount() > 0) {
+								bufferSize = Integer.parseInt(matcher.group(1));
+								if (matcher.groupCount() > 1) {
+									if (matcher.group(2).equals("Kb")) {
+										bufferSize *= 1024;
+									} else if (matcher.group(2).equals("Mb")) {
+										bufferSize *= 1024 * 1024;
+									}
+								}
+								Log.d(LogActivity.TAG, "logcat ring buffer: "
+										+ bufferSize);
+							} else {
+								Log.d(LogActivity.TAG, line);
+							}
+						} catch (IOException e) {
+							Log.e(LogActivity.TAG, e.getMessage());
+						} finally {
+							if (process != null) {
+								process.destroy();
+							}
+							if (reader != null) {
+								try {
+									reader.close();
+								} catch (IOException e) {
+								}
+							}
+						}
+					}
+				}
+
+				/**
+				 * Checks if a single line contains our desired result.
+				 * 
+				 * @param line
+				 */
 				public void handleLine(final String line) {
 					Matcher match = pattern.matcher(line);
 					if (match.find()) {
@@ -207,6 +229,9 @@ public class LogService extends Service {
 		stop();
 	}
 
+	/**
+	 * Stops the service.
+	 */
 	public void stop() {
 		Log.i(LogActivity.TAG, "stopping service");
 		mThread.interrupt();
@@ -221,10 +246,31 @@ public class LogService extends Service {
 		return super.onStartCommand(intent, flags, startId);
 	}
 
+	/**
+	 * Displays a simple notification.
+	 * 
+	 * @param id
+	 * @param title
+	 * @return
+	 */
 	protected Notification showNotification(int id, String title) {
 		return showNotification(id, title, null);
 	}
 
+	/**
+	 * Displays a notification containing a {@link LogResult}. Note that there
+	 * are two reserved {@code id}s:
+	 * <ul>
+	 * <li><b>0</b>: Ongoing notification that service is running</li>
+	 * <li><b>-1</b>: Cancels notification while displaying ticker that service
+	 * has stopped</li>
+	 * </ul>
+	 * 
+	 * @param id
+	 * @param title
+	 * @param result
+	 * @return
+	 */
 	protected Notification showNotification(int id, String title,
 			LogResult result) {
 		NotificationManager ns = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
@@ -258,12 +304,22 @@ public class LogService extends Service {
 		return notification;
 	}
 
+	/**
+	 * Broadcasts a {@link LogResult}.
+	 * 
+	 * @param result
+	 */
 	private void sendResult(LogResult result) {
 		Intent intent = new Intent(TRAPPER_RESPONSE);
 		intent.putExtra("result", result);
 		sendBroadcast(intent);
 	}
 
+	/**
+	 * Broadcasts a message informing if the service is alive or not.
+	 * 
+	 * @param alive
+	 */
 	private void sendResponse(boolean alive) {
 		Intent broadcast = new Intent(SERVICE_RESPONSE);
 		broadcast.putExtra("alive", alive);
