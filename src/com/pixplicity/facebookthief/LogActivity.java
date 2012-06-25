@@ -76,7 +76,6 @@ public class LogActivity extends Activity {
 					mBusyAction.setText(R.string.buffering);
 					mBusyProgress.setVisibility(View.VISIBLE);
 					float progress = intent.getFloatExtra("progress", 0);
-					Log.i(TAG, "progress: " + progress);
 					mBusyProgress.setProgress((int) (progress * 100));
 					break;
 				case STREAMING:
