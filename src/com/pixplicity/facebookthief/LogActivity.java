@@ -25,7 +25,7 @@ import android.widget.ToggleButton;
  */
 public class LogActivity extends Activity {
 
-	protected static final int MAX_ITEMS = 5;
+	protected static final int MAX_ITEMS = 100;
 
 	protected static final String TAG = "LogTrapper";
 
@@ -96,7 +96,6 @@ public class LogActivity extends Activity {
 					mListAdapter.add(response);
 					// Make sure the adapter doesn't contain too many items
 					for (int i = 0; i < mListAdapter.getCount() - MAX_ITEMS; i++) {
-						Log.d(TAG, "remove index 0; i=" + i);
 						mListAdapter.remove(mListAdapter.getItem(0));
 					}
 				}
