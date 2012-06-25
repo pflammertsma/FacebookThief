@@ -32,6 +32,15 @@ public class LogService extends Service {
 
 	private final ArrayList<LogResult> mResults = new ArrayList<LogResult>();
 	private QueryReceiver mReceiver;
+	private State mState = State.STOPPED;
+	private float mBufferProgress;
+
+	public enum State {
+		STARTED,
+		BUFFERING,
+		STREAMING,
+		STOPPED,
+	}
 
 	/**
 	 * Listen to broadcast messages from the activity.
@@ -40,7 +49,7 @@ public class LogService extends Service {
 		@Override
 		public void onReceive(Context context, Intent intent) {
 			// Respond to the query
-			sendResponse(mThread != null && mThread.isAlive());
+			sendResponse();
 			// Send all results
 			synchronized (mResults) {
 				for (int i = 0; i < mResults.size(); i++) {
@@ -89,14 +98,14 @@ public class LogService extends Service {
 								process.getInputStream()),
 								1024);
 						long bytes = 0;
-						long start = 0;
 						while (!isInterrupted()) {
 							final String line = reader.readLine();
 							if (bytes == 0) {
 								// The process started; indicate that the
 								// service is ready
-								sendResponse(true);
-								start = System.currentTimeMillis();
+								mState = LogService.State.STARTED;
+								sendResponse();
+								mState = LogService.State.BUFFERING;
 							}
 							if (line == null) {
 								break;
@@ -108,8 +117,17 @@ public class LogService extends Service {
 										// Reached end of ring buffer
 										Log.i(LogActivity.TAG,
 												"reached end of ring buffer");
+										mState = LogService.State.STREAMING;
+										sendResponse();
 									}
 									bytes = -1;
+								} else {
+									float progress = (float) bytes
+											/ (float) bufferSize;
+									if (progress - mBufferProgress > 0.01) {
+										mBufferProgress = progress;
+										sendResponse();
+									}
 								}
 							}
 							handleLine(line);
@@ -237,7 +255,8 @@ public class LogService extends Service {
 		mThread.interrupt();
 		stopForeground(true);
 		unregisterReceiver(mReceiver);
-		sendResponse(false);
+		mState = State.STOPPED;
+		sendResponse();
 		stopSelf();
 	}
 
@@ -316,13 +335,14 @@ public class LogService extends Service {
 	}
 
 	/**
-	 * Broadcasts a message informing if the service is alive or not.
-	 * 
-	 * @param alive
+	 * Broadcasts a message informing the {@link State} of the service.
 	 */
-	private void sendResponse(boolean alive) {
+	private void sendResponse() {
 		Intent broadcast = new Intent(SERVICE_RESPONSE);
-		broadcast.putExtra("alive", alive);
+		broadcast.putExtra("state", mState);
+		if (mState == State.BUFFERING) {
+			broadcast.putExtra("progress", mBufferProgress);
+		}
 		sendBroadcast(broadcast);
 	}
 

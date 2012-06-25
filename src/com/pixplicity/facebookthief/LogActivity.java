@@ -16,6 +16,8 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.ToggleButton;
 
 /**
@@ -28,6 +30,9 @@ public class LogActivity extends Activity {
 	protected static final String TAG = "LogTrapper";
 
 	private ToggleButton mBtn;
+	private View mBusy;
+	private TextView mBusyAction;
+	private ProgressBar mBusyProgress;
 	private ListView mList;
 
 	private ArrayAdapter<LogResult> mListAdapter;
@@ -56,11 +61,32 @@ public class LogActivity extends Activity {
 			mServiceAlive = true;
 			if (intent.getAction().equals(
 					LogService.SERVICE_RESPONSE)) {
-				if (intent.getBooleanExtra("alive", true)) {
+				LogService.State state = (LogService.State) intent
+						.getSerializableExtra("state");
+				switch (state) {
+				case STARTED:
 					// Clear the list as the service is sending fresh results
 					mListAdapter.clear();
-				} else {
+					mBusy.setVisibility(View.VISIBLE);
+					mBusyAction.setText(R.string.connecting);
+					mBusyProgress.setVisibility(View.GONE);
+					break;
+				case BUFFERING:
+					mBusy.setVisibility(View.VISIBLE);
+					mBusyAction.setText(R.string.buffering);
+					mBusyProgress.setVisibility(View.VISIBLE);
+					float progress = intent.getFloatExtra("progress", 0);
+					Log.i(TAG, "progress: " + progress);
+					mBusyProgress.setProgress((int) (progress * 100));
+					break;
+				case STREAMING:
+					mBusyAction.setText(R.string.streaming);
+					mBusyProgress.setVisibility(View.GONE);
+					break;
+				case STOPPED:
 					mServiceAlive = false;
+					mBusy.setVisibility(View.GONE);
+					break;
 				}
 			} else if (intent.getAction().equals(
 					LogService.TRAPPER_RESPONSE)) {
@@ -120,7 +146,7 @@ public class LogActivity extends Activity {
 			}
 		});
 		mListAdapter = new LogListAdapter(this);
-		mList = (ListView) findViewById(R.id.listView1);
+		mList = (ListView) findViewById(R.id.list);
 		mList.setAdapter(mListAdapter);
 		mList.setOnItemClickListener(new OnItemClickListener() {
 			@Override
@@ -133,6 +159,9 @@ public class LogActivity extends Activity {
 				}
 			}
 		});
+		mBusy = findViewById(R.id.busy);
+		mBusyAction = (TextView) findViewById(R.id.action);
+		mBusyProgress = (ProgressBar) findViewById(R.id.progress);
 
 	}
 

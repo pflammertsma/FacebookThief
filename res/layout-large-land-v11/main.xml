@@ -8,26 +8,36 @@
     <LinearLayout
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="10dp"
-        android:layout_weight="1" >
+        android:layout_weight="1"
+        android:orientation="vertical" >
 
-        <TextView
+        <LinearLayout
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:layout_marginRight="6dp"
+            android:layout_margin="10dp"
             android:layout_weight="1"
-            android:text="@string/hello" />
+            android:orientation="horizontal" >
 
-        <ToggleButton
-            android:id="@+id/toggleButton1"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginRight="10dp"
-            android:text="ToggleButton" />
+            <TextView
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="6dp"
+                android:layout_weight="1"
+                android:text="@string/hello" />
+
+            <ToggleButton
+                android:id="@+id/toggleButton1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="10dp"
+                android:text="ToggleButton" />
+        </LinearLayout>
+
+        <include layout="@layout/busy" />
     </LinearLayout>
 
     <ListView
-        android:id="@+id/listView1"
+        android:id="@+id/list"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:layout_weight="1"
