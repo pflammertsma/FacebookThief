@@ -131,8 +131,10 @@ public class LogService extends Service {
 								}
 							}
 							handleLine(line);
-							// Short delay to prevent locking up
-							Thread.sleep(5);
+							if (mState == LogService.State.STREAMING) {
+								// Short delay to prevent locking up
+								Thread.sleep(5);
+							}
 						}
 					} catch (IOException e) {
 						Log.e(LogActivity.TAG, e.getMessage());

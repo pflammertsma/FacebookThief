@@ -5,6 +5,6 @@
     <string name="hello">This application demonstrates a security vulnerability in Facebook SDK for Android.</string>
     <string name="connecting">Connecting…</string>
     <string name="buffering">Reading buffer…</string>
-    <string name="streaming">Streaming…</string>
+    <string name="streaming">Monitoring…</string>
     
 </resources>
