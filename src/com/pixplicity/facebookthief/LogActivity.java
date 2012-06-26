@@ -9,7 +9,6 @@ import android.content.DialogInterface.OnCancelListener;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.AdapterView;
@@ -79,6 +78,7 @@ public class LogActivity extends Activity {
 					mBusyProgress.setProgress((int) (progress * 100));
 					break;
 				case STREAMING:
+					mBusy.setVisibility(View.VISIBLE);
 					mBusyAction.setText(R.string.streaming);
 					mBusyProgress.setVisibility(View.GONE);
 					break;
